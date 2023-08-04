@@ -9,13 +9,17 @@ class ChromeDriver:
     products = []
     data = []
 
-    def __init__(self, url: str) -> None:
-        self.driver.get(url)
+    def __init__(self, pageUrl: str, productListQuery: str, productsQuery: str, viewMoreQuery: str, fields: dict) -> None:
+        self.driver.get(pageUrl)
+        self.productListQuery = productListQuery
+        self.productsQuery = productsQuery
+        self.viewMoreQuery = viewMoreQuery
+        self.fields = fields
         pass
 
     def findProductList(self):
         try:
-            productList = self.driver.find_element(by=By.CSS_SELECTOR, value="ul.listproduct")
+            productList = self.driver.find_element(by=By.CSS_SELECTOR, value=self.productListQuery)
             return productList
         except NoSuchElementException:
             print(">>> Product List not found")
@@ -25,7 +29,7 @@ class ChromeDriver:
         if(not productList): return
 
         try:
-            self.products = productList.find_elements(by=By.CSS_SELECTOR, value='li.item.__cate_1942')
+            self.products = productList.find_elements(by=By.CSS_SELECTOR, value=self.productsQuery)
             return self.products
         except NoSuchElementException:
             print(">>> Products not found")
@@ -33,7 +37,7 @@ class ChromeDriver:
 
     def clickViewMoreButton(self):
         try:
-            viewMoreButton = self.driver.find_element(by=By.CSS_SELECTOR, value="div.view-more a")
+            viewMoreButton = self.driver.find_element(by=By.CSS_SELECTOR, value=self.viewMoreQuery)
             print("WHaT: ", viewMoreButton.text)
 
             viewMoreButton.click()
@@ -45,20 +49,25 @@ class ChromeDriver:
         except  ElementNotInteractableException:
             print(">>> Cant click view more button")
             return
+        except:
+            print(">>> Unknown Errors")
         
     def getData(self, productList: WebElement):
         if(not productList): return
         try:
             products = self.getProducts(productList)
+            data = []
             for product in products:
-                nameElement = product.find_elements(by=By.CSS_SELECTOR, value="h3")
-                priceElement = product.find_elements(by=By.CSS_SELECTOR, value=".price")
-                name = nameElement[0].text.strip() if len(nameElement) > 0 else ""
-                price = priceElement[0].text.strip() if len(priceElement) > 0 else ""
-                print(">>>>> name: ", name)
-                print(">>>>> price: ", price)
-            print(">>> Total products: ", len(products))
-            return
+                values = []
+                for label, query in self.fields.items():
+                    fieldElement = product.find_elements(by=By.CSS_SELECTOR, value=query)
+                    fieldValue = fieldElement[0].text.strip() if len(fieldElement) > 0 else ""
+                    values.append(fieldValue)
+                data.append(values)
+            return data
         except:
             print("Error: Cannot get full data")
             return None
+
+    def closeBrowser(self):
+        self.driver.close()
